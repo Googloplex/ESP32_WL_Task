@@ -84,12 +84,12 @@ static const char *TAG3 = "\nKEK";
 static void led_off(void)
 {
     /* Set the GPIO level according to the state (LOW or HIGH)*/
-    gpio_set_level(BLINK_GPIO, !s_led_state);
+    gpio_set_level(BLINK_GPIO, s_led_state);
 }
 static void led_on(void)
 {
     /* Set the GPIO level according to the state (LOW or HIGH)*/
-    gpio_set_level(BLINK_GPIO, s_led_state);
+    gpio_set_level(BLINK_GPIO, !s_led_state);
 }
 
 static void configure_led(void)
@@ -147,10 +147,12 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     switch (event_id) {
     case WIFI_EVENT_STA_START:
         ESP_ERROR_CHECK(esp_timer_start_periodic(load_blink_timer_even, 100000));
+        ESP_LOGI(TAG3, "tim wifi start");
         break;
     case WIFI_EVENT_STA_CONNECTED:
         ESP_ERROR_CHECK(esp_timer_stop(load_blink_timer_even));
         gpio_set_level(BLINK_GPIO, 0);
+        ESP_LOGI(TAG3, "tim wifi stop");
         break;
     default:
         break;
@@ -229,17 +231,23 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_DATA:
-        ESP_LOGI(TAG, "MQTT_EVENT_DATA");
+        //printf("MQTT_EVENT_DATA  %s", strstr(event->data, "1"));
         //led_on();
-        if(strstr(event->data, "1") == 0) led_on();
-        if(fstrstr(event->data, "0") == 0) led_off();
-        // if(strstr(event->topic, "signal") == 0) {
-        //     sprintf(&persent, "Signal quality %d%%", rssi_val);
-        //     msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 1, 0);
-        //     ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-        // }
-        printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
-        printf("DATA=%.*s\r\n", event->data_len, event->data);
+        if(strncmp(event->data, "1", 1) == 0) {
+            led_on();
+             ESP_LOGI(TAG, "MQTT_led_on()");
+            }
+        if(strncmp(event->data, "0", 1) == 0) {
+            led_off();
+             ESP_LOGI(TAG, "MQTT_led_off()");
+            }
+        if(strncmp(event->topic, "/topic/signal", 13) == 0) {
+            sprintf(&persent, "Signal quality %d%%", rssi_val);
+            msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 1, 0);
+            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+        }
+        printf("\nTOPIC=%.*s\r\n", event->topic_len, event->topic);
+        printf("\nDATA=%.*s\r\n", event->data_len, event->data);
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
