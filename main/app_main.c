@@ -232,12 +232,12 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT_EVENT_DATA");
         //led_on();
         if(strstr(event->data, "1") == 0) led_on();
-        if(strstr(event->data, "0") == 0) led_off();
-        if(strstr(event->topic, "signal") == 0) {
-            sprintf(&persent, "Signal quality %d%%", rssi_val);
-            msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 1, 0);
-            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-        }
+        if(fstrstr(event->data, "0") == 0) led_off();
+        // if(strstr(event->topic, "signal") == 0) {
+        //     sprintf(&persent, "Signal quality %d%%", rssi_val);
+        //     msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 1, 0);
+        //     ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+        // }
         printf("TOPIC=%.*s\r\n", event->topic_len, event->topic);
         printf("DATA=%.*s\r\n", event->data_len, event->data);
         break;
