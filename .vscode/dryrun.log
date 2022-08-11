@@ -1,0 +1,9 @@
+make.exe --dry-run --always-make --keep-going --print-directory
+make.exe: Entering directory 'e:/esp32_mqtt_led_3/tcp'
+make.exe: Leaving directory 'e:/esp32_mqtt_led_3/tcp'
+ 
+makefile:9: /make/project.mk: No such file or directory
+make.exe: *** No rule to make target '/make/project.mk'.
+make.exe: Failed to remake makefile '/make/project.mk'.
+make.exe: *** No targets specified and no makefile found.  Stop.
+

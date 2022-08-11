@@ -1,0 +1,26 @@
+menu "Example Configuration"
+
+    config BROKER_URL
+        string "Broker URL"
+        default "mqtt://felmar:2173@192.168.1.227:1883"
+        help
+            URL of the broker to connect to
+
+    config BROKER_URL_FROM_STDIN
+        bool
+        default y if BROKER_URL = "FROM_STDIN"
+
+
+    config EXAMPLE_WIFI_SSID
+        string "WIFI SSID"
+        default "TP-Link_5F92"
+        help
+            WIFI SSID is
+    
+    config EXAMPLE_WIFI_PASSWORD
+        string "WIFI PASSWORD"
+        default "42011811"
+        help
+            WIFI PASSWORD is
+
+endmenu

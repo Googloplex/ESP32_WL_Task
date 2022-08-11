@@ -1,0 +1,27 @@
+{
+  "C_Cpp.intelliSenseEngine": "Tag Parser",
+  "idf.portWin": "COM7",
+  "$id": "http://dl.espressif.com/dl/schemas/esp_idf",
+  "_comment": "Configuration file for ESP-IDF IDEs.",
+  "_warning": "Use / or \\ when specifying path. Single backslash is not allowed by JSON format.",
+  "gitPath": "E:\\.espressif\\tools\\idf-git\\2.30.1\\cmd\\git.exe",
+  "idfToolsPath": "E:\\.espressif",
+  "idfSelectedId": "esp-idf-507776081716b8c5fc2d625a3eac5cbc",
+  "idfInstalled": {
+    "esp-idf-507776081716b8c5fc2d625a3eac5cbc": {
+      "version": "4.4.2",
+      "python": "E:\\.espressif\\python_env\\idf4.4_py3.8_env\\Scripts\\python.exe",
+      "path": "e:\\esp\\esp-idf"
+    }
+  },
+  "idf.flashType": "UART",
+  "files.associations": {
+    "led_strip.h": "c",
+    "gpio.h": "c",
+    "cstring": "c",
+    "semphr.h": "c",
+    "complex": "c",
+    "*.inc": "c"
+  },
+  "idf.adapterTargetName": "esp32"
+}
