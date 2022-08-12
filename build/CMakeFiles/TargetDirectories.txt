@@ -643,6 +643,13 @@ E:/esp32_mqtt_led_3/tcp/build/esp-idf/spiffs/CMakeFiles/list_install_components.
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/spiffs/CMakeFiles/install.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/spiffs/CMakeFiles/install/local.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/spiffs/CMakeFiles/install/strip.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/CMakeFiles/__idf_ssd1306.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/CMakeFiles/edit_cache.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/CMakeFiles/rebuild_cache.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/CMakeFiles/list_install_components.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/CMakeFiles/install.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/CMakeFiles/install/local.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/CMakeFiles/install/strip.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/usb/CMakeFiles/edit_cache.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/usb/CMakeFiles/rebuild_cache.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/usb/CMakeFiles/list_install_components.dir

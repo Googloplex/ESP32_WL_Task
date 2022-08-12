@@ -31,34 +31,19 @@
 #include "esp_log.h"
 #include "mqtt_client.h"
 
+#include "driver/i2c.h"
 #include "driver/gpio.h"
 #include "led_strip.h"
 #include "sdkconfig.h"
 #include "esp_timer.h"
 
+#include "ssd1306.h"
+#include "font8x8_basic.h"
+
+#define tag "SSD1306"
+
 
 #define EXAMPLE_ESP_WIFI_SSID      "TP-Link_5F92"
-#define EXAMPLE_ESP_WIFI_PASS      "42011811"
-#define EXAMPLE_ESP_MAXIMUM_RETRY  5
-
-
-#if CONFIG_ESP_WIFI_AUTH_OPEN
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_OPEN
-#elif CONFIG_ESP_WIFI_AUTH_WEP
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WEP
-#elif CONFIG_ESP_WIFI_AUTH_WPA_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WPA2_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WPA_WPA2_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA_WPA2_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WPA3_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA3_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WPA2_WPA3_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_WPA3_PSK
-#elif CONFIG_ESP_WIFI_AUTH_WAPI_PSK
-#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WAPI_PSK
-#endif
 
 #define BLINK_GPIO 2
 static uint8_t s_led_state = 0;
@@ -74,9 +59,10 @@ static int s_retry_num = 0;
 
 static const char *TAG = "\nMQTT_EXAMPLE";
 static const char *TAG2 = "\nMQTT_RSSI";
-static const char *TAG3 = "\nKEK";
 
-
+SSD1306_t dev;
+int center, top, bottom;
+char lineChar[20];
 
 //uint16_t g_scan_ap_num;
 // wifi_ap_record_t *g_ap_list_buffer;
@@ -138,37 +124,30 @@ void init_tims(void) {
     // gpio_set_level(BLINK_GPIO, 0);
 }
 
-
-
-static void wifi_event_handler(void* arg, esp_event_base_t event_base,
-                                int32_t event_id, void* event_data)
-{
-    esp_timer_handle_t load_blink_timer_even = (esp_timer_handle_t*)load_blink_timer;
-    switch (event_id) {
-    case WIFI_EVENT_STA_START:
-        ESP_ERROR_CHECK(esp_timer_start_periodic(load_blink_timer_even, 100000));
-        ESP_LOGI(TAG3, "tim wifi start");
-        break;
-    case WIFI_EVENT_STA_CONNECTED:
-        ESP_ERROR_CHECK(esp_timer_stop(load_blink_timer_even));
-        gpio_set_level(BLINK_GPIO, 0);
-        ESP_LOGI(TAG3, "tim wifi stop");
-        break;
-    default:
-        break;
-    }
-
-    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
-        esp_wifi_connect();
-    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
-            esp_wifi_connect();
-            s_retry_num++;
-            ESP_LOGI(TAG3, "retry to connect to the AP");
-        } 
-        ESP_LOGI(TAG3,"connect to the AP fail");
-    }
+void oled_init(void){
+    ESP_LOGI(TAG, "INTERFACE is i2c");
+	ESP_LOGI(TAG, "CONFIG_SDA_GPIO=%d",CONFIG_SDA_GPIO);
+	ESP_LOGI(TAG, "CONFIG_SCL_GPIO=%d",CONFIG_SCL_GPIO);
+	ESP_LOGI(TAG, "CONFIG_RESET_GPIO=%d",CONFIG_RESET_GPIO);
+	i2c_master_init(&dev, CONFIG_SDA_GPIO, CONFIG_SCL_GPIO, CONFIG_RESET_GPIO);
+    dev._flip = true;
+    ESP_LOGI(TAG, "Panel is 128x64");
+	ssd1306_init(&dev, 128, 64);
+    ssd1306_clear_screen(&dev, false);
+	ssd1306_contrast(&dev, 0xff);
+    //ssd1306_display_text(&dev, 0, "lol", 5, false);
+    //ssd1306_display_text(&dev, 1, "kek", 5, false);
+    ssd1306_display_text(&dev, 0, "SSD1306 128x64", 14, false);
+	ssd1306_display_text(&dev, 1, "ABCDEFGHIJKLMNOP", 16, false);
+	ssd1306_display_text(&dev, 2, "abcdefghijklmnop",16, false);
+	ssd1306_display_text(&dev, 3, "Hello World!!", 13, false);
+	ssd1306_display_text(&dev, 4, "SSD1306 128x64", 14, true);
+	ssd1306_display_text(&dev, 5, "ABCDEFGHIJKLMNOP", 16, true);
+	ssd1306_display_text(&dev, 6, "abcdefghijklmnop",16, true);
+	ssd1306_display_text(&dev, 7, "Hello World!!", 13, true);
+	int pages = 7;
 }
+
 
 
 
@@ -197,12 +176,16 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         break;
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");   //   -- ready
+        ssd1306_clear_screen(&dev, false);
+        ssd1306_display_text(&dev, 0, "MQTT -- ready", 23, false);
         
         ESP_ERROR_CHECK(esp_timer_stop(load_blink_timer_even));
         gpio_set_level(BLINK_GPIO, 0);
 
-        sprintf(&persent, "Signal quality %d%%", rssi_val);
+        sprintf(&persent, "Signal %d%%", rssi_val);
         msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 1, 0);
+        ssd1306_display_text(&dev, 1, &persent, strlen(&persent), false);
+        //ssd1306_hardware_scroll(&dev, SCROLL_RIGHT);
         ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
         msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
@@ -217,6 +200,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");  //  -- lost
+        ssd1306_clear_screen(&dev, false);
+        ssd1306_display_text(&dev, 0, "MQTT -- lost", 23, false);
         break;
 
     case MQTT_EVENT_SUBSCRIBED:
@@ -233,6 +218,10 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     case MQTT_EVENT_DATA:
         //printf("MQTT_EVENT_DATA  %s", strstr(event->data, "1"));
         //led_on();
+        ssd1306_display_text(&dev, 3, " TOPIC:", 6, false);
+        ssd1306_display_text(&dev, 4, event->topic, 13, false);
+        ssd1306_display_text(&dev, 5, "DATA:", 5, false);
+        ssd1306_display_text(&dev, 6, event->data, 1, false);
         if(strncmp(event->data, "1", 1) == 0) {
             led_on();
              ESP_LOGI(TAG, "MQTT_led_on()");
@@ -265,43 +254,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     }
 }
 
-
-
-void wifi_init_sta(void)
-{
-
-    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-
-    esp_event_handler_instance_t instance_any_id;
-    esp_event_handler_instance_t instance_got_ip;
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
-                                                        ESP_EVENT_ANY_ID,
-                                                        &wifi_event_handler,
-                                                        NULL,
-                                                        &instance_any_id));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
-                                                        IP_EVENT_STA_GOT_IP,
-                                                        &wifi_event_handler,
-                                                        NULL,
-                                                        &instance_got_ip));
-
-    wifi_config_t wifi_config = {
-        .sta = {
-            .ssid = EXAMPLE_ESP_WIFI_SSID,
-            .password = EXAMPLE_ESP_WIFI_PASS,
-            /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. Incase your Access point
-             * doesn't support WPA2, these mode can be enabled by commenting below line */
-        },
-    };
-    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
-    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
-    ESP_ERROR_CHECK(esp_wifi_start() );
-
-    ESP_LOGI(TAG3, "wifi_init_sta finished.");
-
-}
 
 
 void get_ap_records(void)
@@ -373,7 +325,7 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
 
     init_tims();
-    wifi_init_sta();
+    oled_init();
     mqtt_app_start();
     get_ap_records();
 }

@@ -67,6 +67,7 @@ E:/esp32_mqtt_led_3/tcp/build/esp-idf/mqtt/libmqtt.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/openssl/libopenssl.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/perfmon/libperfmon.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/spiffs/libspiffs.a
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/libssd1306.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/ulp/libulp.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/wifi_provisioning/libwifi_provisioning.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/main/libmain.a
