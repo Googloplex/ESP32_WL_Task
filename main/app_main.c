@@ -44,6 +44,28 @@
 
 
 #define EXAMPLE_ESP_WIFI_SSID      "TP-Link_5F92"
+#define EXAMPLE_ESP_WIFI_PASS      "42011811"
+#define EXAMPLE_ESP_MAXIMUM_RETRY  5
+
+
+#if CONFIG_ESP_WIFI_AUTH_OPEN
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_OPEN
+#elif CONFIG_ESP_WIFI_AUTH_WEP
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WEP
+#elif CONFIG_ESP_WIFI_AUTH_WPA_PSK
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA_PSK
+#elif CONFIG_ESP_WIFI_AUTH_WPA2_PSK
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_PSK
+#elif CONFIG_ESP_WIFI_AUTH_WPA_WPA2_PSK
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA_WPA2_PSK
+#elif CONFIG_ESP_WIFI_AUTH_WPA3_PSK
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA3_PSK
+#elif CONFIG_ESP_WIFI_AUTH_WPA2_WPA3_PSK
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WPA2_WPA3_PSK
+#elif CONFIG_ESP_WIFI_AUTH_WAPI_PSK
+#define ESP_WIFI_SCAN_AUTH_MODE_THRESHOLD WIFI_AUTH_WAPI_PSK
+#endif
+
 
 #define BLINK_GPIO 2
 static uint8_t s_led_state = 0;
@@ -59,6 +81,7 @@ static int s_retry_num = 0;
 
 static const char *TAG = "\nMQTT_EXAMPLE";
 static const char *TAG2 = "\nMQTT_RSSI";
+static const char *TAG3 = "\nKEK";
 
 SSD1306_t dev;
 int center, top, bottom;
@@ -150,6 +173,37 @@ void oled_init(void){
 
 
 
+static void wifi_event_handler(void* arg, esp_event_base_t event_base,
+                                int32_t event_id, void* event_data)
+{
+    esp_timer_handle_t wifi_blink_timer_even = (esp_timer_handle_t*)(void*)load_blink_timer;
+    switch (event_id) {
+    case WIFI_EVENT_STA_START:
+        ESP_ERROR_CHECK(esp_timer_start_periodic(wifi_blink_timer_even, 100000));
+        ESP_LOGI(TAG3, "tim wifi start");
+        break;
+    case WIFI_EVENT_STA_CONNECTED:
+        ESP_ERROR_CHECK(esp_timer_stop(wifi_blink_timer_even));
+        gpio_set_level(BLINK_GPIO, 0);
+        ESP_LOGI(TAG3, "tim wifi stop");
+        break;
+    default:
+        break;
+    }
+
+    if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
+        esp_wifi_connect();
+    } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
+        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
+            esp_wifi_connect();
+            s_retry_num++;
+            ESP_LOGI(TAG3, "retry to connect to the AP");
+        } 
+        ESP_LOGI(TAG3,"connect to the AP fail");
+    }
+}
+
+
 
 /*
  * @brief Event handler registered to receive MQTT events
@@ -172,7 +226,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     int msg_id;
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_BEFORE_CONNECT:
-        ESP_ERROR_CHECK(esp_timer_start_periodic(load_blink_timer_even, 100000));
+        //ESP_ERROR_CHECK(esp_timer_start_periodic(load_blink_timer_even, 100000));
         break;
     case MQTT_EVENT_CONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");   //   -- ready
@@ -258,6 +312,10 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
 void get_ap_records(void)
 {
+    // ESP_ERROR_CHECK(esp_netif_init());
+    // esp_netif_t *sta_netif = esp_netif_create_default_wifi_sta();
+    // assert(sta_netif);
+
     wifi_scan_config_t scan_config = { 0 };
     scan_config.ssid = (uint8_t *) EXAMPLE_ESP_WIFI_SSID;
     uint8_t i;
@@ -285,6 +343,69 @@ void get_ap_records(void)
 
 
 }
+
+
+
+void wifi_init_sta(void)
+{
+
+    wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+
+    esp_event_handler_instance_t instance_any_id;
+    esp_event_handler_instance_t instance_got_ip;
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT,
+                                                        ESP_EVENT_ANY_ID,
+                                                        &wifi_event_handler,
+                                                        NULL,
+                                                        &instance_any_id));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT,
+                                                        IP_EVENT_STA_GOT_IP,
+                                                        &wifi_event_handler,
+                                                        NULL,
+                                                        &instance_got_ip));
+
+    wifi_config_t wifi_config = {
+        .sta = {
+            .ssid = EXAMPLE_ESP_WIFI_SSID,
+            .password = EXAMPLE_ESP_WIFI_PASS,
+            /* Setting a password implies station will connect to all security modes including WEP/WPA.
+             * However these modes are deprecated and not advisable to be used. Incase your Access point
+             * doesn't support WPA2, these mode can be enabled by commenting below line */
+        },
+    };
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA) );
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
+    ESP_ERROR_CHECK(esp_wifi_start() );
+
+    ESP_LOGI(TAG3, "wifi_init_sta finished.");
+
+    esp_netif_ip_info_t ip_info;
+    uint8_t mac[] =  { 0,0,0,0,0,1};
+    esp_netif_inherent_config_t netif_common_config = {
+            .flags = ESP_NETIF_FLAG_AUTOUP,
+            .ip_info = (esp_netif_ip_info_t*)&ip_info,
+            .if_key = "TEST",
+            .if_desc = "net_test_if"
+    };
+    esp_netif_set_ip4_addr(&ip_info.ip, 10, 0 , 0, 1);
+    esp_netif_set_ip4_addr(&ip_info.gw, 10, 0 , 0, 1);
+    esp_netif_set_ip4_addr(&ip_info.netmask, 255, 255 , 255, 0);
+
+    esp_netif_config_t config = {
+        .base = &netif_common_config,                 // use specific behaviour configuration
+        .stack = ESP_NETIF_NETSTACK_DEFAULT_WIFI_STA, // use default WIFI-like network stack configuration
+    };
+
+    // Netif creation and configuration
+    //
+    ESP_ERROR_CHECK(esp_netif_init());
+    esp_netif_t* netif = esp_netif_new(&config);
+    assert(netif);
+    //esp_netif_attach(netif, netsuite_io_new());
+
+}
+
 
 static void mqtt_app_start(void)
 {
@@ -322,13 +443,17 @@ void app_main(void)
      * Read "Establishing Wi-Fi or Ethernet Connection" section in
      * examples/protocols/README.md for more information about this function.
      */
-    ESP_ERROR_CHECK(example_connect());
-
     init_tims();
     oled_init();
-    mqtt_app_start();
+    wifi_init_sta();
     get_ap_records();
-}
+    ESP_ERROR_CHECK(example_connect());
+    
+
+
+    
+    mqtt_app_start();
+ }   
 
 static void load_blink_timer_callback(void* arg)
 {

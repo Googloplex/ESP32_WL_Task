@@ -2357,10 +2357,7 @@
                                 "help": "The minimum rssi to accept in the scan mode.",
                                 "id": "EXAMPLE_WIFI_SCAN_RSSI_THRESHOLD",
                                 "name": "EXAMPLE_WIFI_SCAN_RSSI_THRESHOLD",
-                                "range": [
-                                    -127,
-                                    0
-                                ],
+                                "range": null,
                                 "title": "WiFi minimum rssi",
                                 "type": "int"
                             },
