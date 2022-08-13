@@ -1,4 +1,4 @@
-# Install script for directory: E:/esp/esp-idf/components/ssd1306
+# Install script for directory: E:/esp32_mqtt_led_3/tcp/components/ssd1306
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

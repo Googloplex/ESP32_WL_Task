@@ -1,4 +1,4 @@
-# Install script for directory: E:/esp/esp-idf/examples/common_components/protocol_examples_common
+# Install script for directory: E:/esp32_mqtt_led_3/tcp/components/protocol_examples_common
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

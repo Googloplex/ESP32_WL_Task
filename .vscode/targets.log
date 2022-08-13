@@ -9,7 +9,7 @@ This program is built by Equation Solution <http://www.Equation.com>.
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
 
-# Make data base, printed on Fri Aug 12 03:56:57 2022
+# Make data base, printed on Sat Aug 13 23:09:58 2022
 
 # Variables
 
@@ -37,8 +37,6 @@ HOMEDRIVE = C:
 CURDIR := e:/esp32_mqtt_led_3/tcp
 # default
 SHELL := sh.exe
-# makefile (from 'makefile', line 7)
-EXTRA_COMPONENT_DIRS = $(IDF_PATH)/examples/common_components/protocol_examples_common
 # environment
 WINDIR = C:\Windows
 # environment
@@ -90,7 +88,7 @@ ELECTRON_RUN_AS_NODE = 1
 # automatic
 %F = $(notdir $%)
 # environment
-CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_16024_DJPQENRYUTTGBYGV
+CHROME_CRASHPAD_PIPE_NAME = \\.\pipe\crashpad_4460_MOBYKIDYENZEKWTZ
 # environment
 COMPUTERNAME = DESKTOP-G5N9IK7
 # environment
@@ -208,11 +206,11 @@ PROCESSOR_LEVEL = 6
 # environment
 FPS_BROWSER_APP_PROFILE_STRING = Internet Explorer
 # environment
-VSCODE_PID = 16024
+VSCODE_PID = 4460
 # environment
 USERDOMAIN_ROAMINGPROFILE = DESKTOP-G5N9IK7
 # variable set hash-table stats:
-# Load=99/1024=10%, Rehash=0, Collisions=15/118=13%
+# Load=98/1024=10%, Rehash=0, Collisions=15/117=13%
 
 # Pattern-specific Variable Values
 
@@ -220,9 +218,9 @@ USERDOMAIN_ROAMINGPROFILE = DESKTOP-G5N9IK7
 
 # Directories
 
-# . (key e:/esp32_mqtt_led_3/tcp, mtime 1660262232ll): 15 files, no impossibilities.
+# . (key e:/esp32_mqtt_led_3/tcp, mtime 1660421131ll): 16 files, no impossibilities.
 
-# 15 files, no impossibilities in 1 directories.
+# 16 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -246,7 +244,7 @@ all:
 # Not a target:
 Makefile:
 #  Implicit rule search has not been done.
-#  Last modified 2022-08-10 14:52:39
+#  Last modified 2022-08-13 23:09:31
 #  File has not been updated.
 
 # Not a target:
@@ -263,12 +261,12 @@ Makefile:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 19 / storage = 195 B / avg = 10 B
-# current buf: size = 8162 B / used = 195 B / count = 19 / avg = 10 B
+# strcache buffers: 1 (0) / strings = 20 / storage = 206 B / avg = 10 B
+# current buf: size = 8162 B / used = 206 B / count = 20 / avg = 10 B
 
-# strcache performance: lookups = 23 / hit rate = 17%
+# strcache performance: lookups = 24 / hit rate = 16%
 # hash-table stats:
-# Load=19/8192=0%, Rehash=0, Collisions=1/23=4%
-# Finished Make data base on Fri Aug 12 03:56:57 2022
+# Load=20/8192=0%, Rehash=0, Collisions=1/24=4%
+# Finished Make data base on Sat Aug 13 23:09:58 2022
 
  

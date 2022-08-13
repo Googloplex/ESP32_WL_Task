@@ -49,7 +49,7 @@
 static uint8_t s_led_state = 0;
 
 static uint8_t rssi_val;
-static uint8_t persent[30];
+static char persent[30];
 
 static void load_blink_timer_callback(void* arg);
 esp_timer_handle_t load_blink_timer;
@@ -168,7 +168,7 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
-    esp_timer_handle_t load_blink_timer_even = (esp_timer_handle_t*)load_blink_timer;
+    esp_timer_handle_t load_blink_timer_even = (esp_timer_handle_t)(void*)load_blink_timer; //  (esp_timer_handle_t*)load_blink_timer;
     int msg_id;
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_BEFORE_CONNECT:
@@ -289,7 +289,7 @@ void get_ap_records(void)
 static void mqtt_app_start(void)
 {
     esp_mqtt_client_config_t mqtt_cfg = {
-        .uri =  "mqtt://felmar:2173@192.168.1.227:1883",
+        .uri = CONFIG_BROKER_URL,
     };
 
     esp_mqtt_client_handle_t client = esp_mqtt_client_init(&mqtt_cfg);
