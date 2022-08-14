@@ -43,8 +43,6 @@
 #define tag "SSD1306"
 
 
-#define EXAMPLE_ESP_WIFI_SSID      "TP-Link_5F92"
-
 #define BLINK_GPIO 2
 static uint8_t s_led_state = 0;
 
@@ -53,9 +51,7 @@ static char persent[30];
 
 static void load_blink_timer_callback(void* arg);
 esp_timer_handle_t load_blink_timer;
-//static void oneshot_timer(void* arg);
 
-static int s_retry_num = 0;
 
 static const char *TAG = "\nMQTT_EXAMPLE";
 static const char *TAG2 = "\nMQTT_RSSI";
@@ -64,8 +60,6 @@ SSD1306_t dev;
 int center, top, bottom;
 char lineChar[20];
 
-//uint16_t g_scan_ap_num;
-// wifi_ap_record_t *g_ap_list_buffer;
 
 static void led_off(void)
 {
@@ -149,7 +143,34 @@ void oled_init(void){
 }
 
 
+static void mqtt_data_hendler(esp_mqtt_event_handle_t event){
+        int msg_id;
+        esp_mqtt_client_handle_t client = event->client;
+        ssd1306_display_text(&dev, 3, " TOPIC:", 6, false);
+        ssd1306_display_text(&dev, 4, event->topic, 13, false);
+        ssd1306_display_text(&dev, 5, "DATA:", 5, false);
+        ssd1306_display_text(&dev, 6, event->data, 1, false);
+        if(strncmp(event->data, "1", 1) == 0) {
+            led_on();
+             ESP_LOGI(TAG, "MQTT_led_on()");
+            }
+        if(strncmp(event->data, "0", 1) == 0) {
+            led_off();
+             ESP_LOGI(TAG, "MQTT_led_off()");
+            }
+        if(strncmp(event->topic, "/topic/signal", 13) == 0) {
+            sprintf(&persent, "Signal quality %d%%", rssi_val);
+            msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 1, 0);
+            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+        }
+        printf("\nTOPIC=%.*s\r\n", event->topic_len, event->topic);
+        printf("\nDATA=%.*s\r\n", event->data_len, event->data);
 
+
+        
+        msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 2, 0);
+        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+}
 
 /*
  * @brief Event handler registered to receive MQTT events
@@ -183,9 +204,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         gpio_set_level(BLINK_GPIO, 0);
 
         sprintf(&persent, "Signal %d%%", rssi_val);
-        msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 1, 0);
+        msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 2, 0);
         ssd1306_display_text(&dev, 1, &persent, strlen(&persent), false);
-        //ssd1306_hardware_scroll(&dev, SCROLL_RIGHT);
         ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
         msg_id = esp_mqtt_client_subscribe(client, "/topic/qos0", 0);
@@ -206,8 +226,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
     case MQTT_EVENT_SUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-        msg_id = esp_mqtt_client_publish(client, "/topic/qos0", "data", 0, 0, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
         break;
     case MQTT_EVENT_UNSUBSCRIBED:
         ESP_LOGI(TAG, "MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
@@ -216,27 +234,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         ESP_LOGI(TAG, "MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
         break;
     case MQTT_EVENT_DATA:
-        //printf("MQTT_EVENT_DATA  %s", strstr(event->data, "1"));
-        //led_on();
-        ssd1306_display_text(&dev, 3, " TOPIC:", 6, false);
-        ssd1306_display_text(&dev, 4, event->topic, 13, false);
-        ssd1306_display_text(&dev, 5, "DATA:", 5, false);
-        ssd1306_display_text(&dev, 6, event->data, 1, false);
-        if(strncmp(event->data, "1", 1) == 0) {
-            led_on();
-             ESP_LOGI(TAG, "MQTT_led_on()");
-            }
-        if(strncmp(event->data, "0", 1) == 0) {
-            led_off();
-             ESP_LOGI(TAG, "MQTT_led_off()");
-            }
-        if(strncmp(event->topic, "/topic/signal", 13) == 0) {
-            sprintf(&persent, "Signal quality %d%%", rssi_val);
-            msg_id = esp_mqtt_client_publish(client, "/topic/qos1", &persent, 0, 1, 0);
-            ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-        }
-        printf("\nTOPIC=%.*s\r\n", event->topic_len, event->topic);
-        printf("\nDATA=%.*s\r\n", event->data_len, event->data);
+        printf(TAG, "MQTT_EVENT_DATA");
+        mqtt_data_hendler(event);
         break;
     case MQTT_EVENT_ERROR:
         ESP_LOGI(TAG, "MQTT_EVENT_ERROR");
@@ -259,8 +258,6 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 void get_ap_records(void)
 {
     wifi_scan_config_t scan_config = { 0 };
-    scan_config.ssid = (uint8_t *) EXAMPLE_ESP_WIFI_SSID;
-    uint8_t i;
 
     esp_wifi_scan_start(&scan_config, true);
 
