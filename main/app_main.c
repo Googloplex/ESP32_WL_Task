@@ -212,8 +212,7 @@ static void mqtt_data_hendler(esp_mqtt_event_handle_t event){
                 ESP_LOGI(TAG, "MQTT_led_on()");
                 msg_id = esp_mqtt_client_publish(client, "/root/monitor", "MQTT_led_on()", 0, 1, 0);
                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-            } else {
-            if(strncmp(event->data, "off", event->data_len) == 0) {
+            } else if(strncmp(event->data, "off", event->data_len) == 0) {
                 led_off();
                 ESP_LOGI(TAG, "MQTT_led_off()");
                 msg_id = esp_mqtt_client_publish(client, "/root/monitor", "MQTT_led_off()", 0, 1, 0);
