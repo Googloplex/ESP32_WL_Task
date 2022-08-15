@@ -46,22 +46,22 @@ idf.py -p PORT flash monitor
 See the Getting Started Guide for full steps to configure and use ESP-IDF to build projects.
 
 ## Project MQTT convention
-We have three topics for device management:
+We have three topics for device management:  
+  
+/root/monitor  
+/root/control/  
+/root/control/led  
 
-/root/monitor
-/root/control/
-/root/control/led
+He is subscribed to two topics and listens to certain commands:  
+`/root/control/`  
+`/root/control/led`  
 
-He is subscribed to two topics and listens to certain commands:
-`/root/control/`
-`/root/control/led`
+On the third topic, he publishes answers:  
+`/root/monitor`  
 
-On the third topic, he publishes answers:
-`/root/monitor`
-
-Commands accepted by the /control branch:
-`getinfo` - is responsible for requesting information about the device, namely the Wi-Fi signal level;
-Commands accepted by the /control/led branch:
-`on` - turn on the LED;
-`off` - turn off the LED;
+Commands accepted by the /control branch:  
+`getinfo` - is responsible for requesting information about the device, namely the Wi-Fi signal level;  
+Commands accepted by the /control/led branch:  
+`on` - turn on the LED;  
+`off` - turn off the LED;  
 
