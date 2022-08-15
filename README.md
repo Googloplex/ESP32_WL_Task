@@ -61,7 +61,8 @@ On the third topic, he publishes answers:
 
 Commands accepted by the /control branch:  
 `getinfo` - is responsible for requesting information about the device, namely the Wi-Fi signal level;  
+  
 Commands accepted by the /control/led branch:  
-`on` - turn on the LED;  
-`off` - turn off the LED;  
+`on` - turn on LED;  
+`off` - turn off LED;  
 
