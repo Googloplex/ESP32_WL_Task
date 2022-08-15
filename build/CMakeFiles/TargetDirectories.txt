@@ -683,13 +683,6 @@ E:/esp32_mqtt_led_3/tcp/build/esp-idf/main/CMakeFiles/list_install_components.di
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/main/CMakeFiles/install.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/main/CMakeFiles/install/local.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/main/CMakeFiles/install/strip.dir
-E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/__idf_protocol_examples_common.dir
-E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/edit_cache.dir
-E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/rebuild_cache.dir
-E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/list_install_components.dir
-E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/install.dir
-E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/install/local.dir
-E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/install/strip.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/CMakeFiles/__idf_led_strip.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/CMakeFiles/edit_cache.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/CMakeFiles/rebuild_cache.dir
@@ -697,3 +690,10 @@ E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/CMakeFiles/list_install_componen
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/CMakeFiles/install.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/CMakeFiles/install/local.dir
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/CMakeFiles/install/strip.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/__idf_protocol_examples_common.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/edit_cache.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/rebuild_cache.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/list_install_components.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/install.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/install/local.dir
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/CMakeFiles/install/strip.dir

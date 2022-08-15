@@ -123,8 +123,8 @@ if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   include("E:/esp32_mqtt_led_3/tcp/build/esp-idf/ulp/cmake_install.cmake")
   include("E:/esp32_mqtt_led_3/tcp/build/esp-idf/wifi_provisioning/cmake_install.cmake")
   include("E:/esp32_mqtt_led_3/tcp/build/esp-idf/main/cmake_install.cmake")
-  include("E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/cmake_install.cmake")
   include("E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/cmake_install.cmake")
+  include("E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/cmake_install.cmake")
 
 endif()
 

@@ -71,5 +71,5 @@ E:/esp32_mqtt_led_3/tcp/build/esp-idf/ssd1306/libssd1306.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/ulp/libulp.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/wifi_provisioning/libwifi_provisioning.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/main/libmain.a
-E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/libprotocol_examples_common.a
 E:/esp32_mqtt_led_3/tcp/build/esp-idf/led_strip/libled_strip.a
+E:/esp32_mqtt_led_3/tcp/build/esp-idf/protocol_examples_common/libprotocol_examples_common.a
