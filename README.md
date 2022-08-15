@@ -1,24 +1,39 @@
-# ESP-MQTT sample application
-(See the README.md file in the upper level 'examples' directory for more information about examples.)
+# Test task for the position of embedded developer in WebbyLab
 
-This example connects to the broker URI selected using `idf.py menuconfig` (using mqtt tcp transport) and as a demonstration subscribes/unsubscribes and send a message on certain topic.
-(Please note that the public broker is maintained by the community so may not be always available, for details please see this [disclaimer](https://iot.eclipse.org/getting-started/#sandboxes))
-
-Note: If the URI equals `FROM_STDIN` then the broker address is read from stdin upon application startup (used for testing)
+This poject connects to the Wi-Fi and selected broker URI using `idf.py menuconfig` (using mqtt tcp transport) and as a demonstration subscribes/unsubscribes and send a message on certain topic to control led and reqest device status.
 
 It uses ESP-MQTT library which implements mqtt client to connect to mqtt broker.
 
-## How to use example
+It can also display device and connection information on the OLED screen.
+
+## How to use 
 
 ### Hardware Required
 
 This example can be executed on any ESP32 board, the only required interface is WiFi and connection to internet.
 
+You also need to have an SSD1306 128x64 i2c screen to use the terminal function.
+```
+OLED sda ---> GPIO 21 esp32
+OLED scl ---> GPIO 22 esp32
+```
+
 ### Configure the project
 
 * Open the project configuration menu (`idf.py menuconfig`)
+* Set GPIO pins for you I2C bus. 
 * Configure Wi-Fi or Ethernet under "Example Connection Configuration" menu. See "Establishing Wi-Fi or Ethernet Connection" section in [examples/protocols/README.md](../../README.md) for more details.
+* Broker URI used in the following format
+```
+mqtt://username:password@hostname:1884 
+
+exemple:
+mqtt://felmar:2173@192.168.1.227:1883
+```
+MQTT over TCP, port 1884, with username and password
 * When using Make build system, set `Default serial port` under `Serial flasher config`.
+
+Note: all need components contain in project dir
 
 ### Build and Flash
 
@@ -28,32 +43,25 @@ Build the project and flash it to the board, then run monitor tool to view seria
 idf.py -p PORT flash monitor
 ```
 
-(To exit the serial monitor, type ``Ctrl-]``.)
-
 See the Getting Started Guide for full steps to configure and use ESP-IDF to build projects.
 
-## Example Output
+## Project MQTT convention
+We have three topics for device management:
 
-```
-I (3714) event: sta ip: 192.168.0.139, mask: 255.255.255.0, gw: 192.168.0.2
-I (3714) system_api: Base MAC address is not set, read default base MAC address from BLK0 of EFUSE
-I (3964) MQTT_CLIENT: Sending MQTT CONNECT message, type: 1, id: 0000
-I (4164) MQTT_EXAMPLE: MQTT_EVENT_CONNECTED
-I (4174) MQTT_EXAMPLE: sent publish successful, msg_id=41464
-I (4174) MQTT_EXAMPLE: sent subscribe successful, msg_id=17886
-I (4174) MQTT_EXAMPLE: sent subscribe successful, msg_id=42970
-I (4184) MQTT_EXAMPLE: sent unsubscribe successful, msg_id=50241
-I (4314) MQTT_EXAMPLE: MQTT_EVENT_PUBLISHED, msg_id=41464
-I (4484) MQTT_EXAMPLE: MQTT_EVENT_SUBSCRIBED, msg_id=17886
-I (4484) MQTT_EXAMPLE: sent publish successful, msg_id=0
-I (4684) MQTT_EXAMPLE: MQTT_EVENT_SUBSCRIBED, msg_id=42970
-I (4684) MQTT_EXAMPLE: sent publish successful, msg_id=0
-I (4884) MQTT_CLIENT: deliver_publish, message_length_read=19, message_length=19
-I (4884) MQTT_EXAMPLE: MQTT_EVENT_DATA
-TOPIC=/topic/qos0
-DATA=data
-I (5194) MQTT_CLIENT: deliver_publish, message_length_read=19, message_length=19
-I (5194) MQTT_EXAMPLE: MQTT_EVENT_DATA
-TOPIC=/topic/qos0
-DATA=data
-```
+/root/monitor
+/root/control/
+/root/control/led
+
+He is subscribed to two topics and listens to certain commands:
+`/root/control/`
+`/root/control/led`
+
+On the third topic, he publishes answers:
+`/root/monitor`
+
+Commands accepted by the /control branch:
+`getinfo` - is responsible for requesting information about the device, namely the Wi-Fi signal level;
+Commands accepted by the /control/led branch:
+`on` - turn on the LED;
+`off` - turn off the LED;
+
