@@ -184,7 +184,7 @@ enum TOPICS
 static uint8_t get_topic(esp_mqtt_event_handle_t event){
         /*  Checking if a string matches  */
         if(strncmp(event->topic, "/root/control", event->topic_len) == 0) return COMANDS_TOPIC;
-        if(strncmp(event->topic, "/root/led-control", event->topic_len) == 0) return LED_CONTROL_TOPIC;
+        if(strncmp(event->topic, "/root/control/led", event->topic_len) == 0) return LED_CONTROL_TOPIC;
         return INVALID_TOPIC;
 }
 
@@ -210,16 +210,16 @@ static void mqtt_data_hendler(esp_mqtt_event_handle_t event){
             if(strncmp(event->data, "on", event->data_len) == 0) {
                 led_on();
                 ESP_LOGI(TAG, "MQTT_led_on()");
-                msg_id = esp_mqtt_client_publish(client, "/root/stats", "MQTT_led_on()", 0, 1, 0);
+                msg_id = esp_mqtt_client_publish(client, "/root/monitor", "MQTT_led_on()", 0, 1, 0);
                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             }
             if(strncmp(event->data, "off", event->data_len) == 0) {
                 led_off();
                 ESP_LOGI(TAG, "MQTT_led_off()");
-                msg_id = esp_mqtt_client_publish(client, "/root/stats", "MQTT_led_off()", 0, 1, 0);
+                msg_id = esp_mqtt_client_publish(client, "/root/monitor", "MQTT_led_off()", 0, 1, 0);
                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             } else {
-                msg_id = esp_mqtt_client_publish(client, "/root/stats", "Invalid comand. Put \"on\" or \"off\" to switch on or switch off led.", 0, 1, 0);
+                msg_id = esp_mqtt_client_publish(client, "/root/monitor", "Invalid comand. Put \"on\" or \"off\" to switch on or switch off led.", 0, 1, 0);
                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             }
             break;
@@ -227,10 +227,10 @@ static void mqtt_data_hendler(esp_mqtt_event_handle_t event){
             /*  Get device info  */
             if(strncmp(event->data, "getinfo", event->data_len) == 0) {
                 sprintf(&persent, "Wi-Fi signal quality: %d%%", get_rssi());
-                msg_id = esp_mqtt_client_publish(client, "/root/stats", &persent, 0, 1, 0);
+                msg_id = esp_mqtt_client_publish(client, "/root/monitor", &persent, 0, 1, 0);
                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             } else {
-                msg_id = esp_mqtt_client_publish(client, "/root/stats", "Invalid comand. Put \"getinfo\" to get info.", 0, 1, 0);
+                msg_id = esp_mqtt_client_publish(client, "/root/monitor", "Invalid comand. Put \"getinfo\" to get info.", 0, 1, 0);
                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             }
             break;
@@ -277,17 +277,17 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         sprintf(&persent, "Signal %d%%", get_rssi());
         ssd1306_display_text(&dev, 1, &persent, strlen(&persent), false);
 
-        /*  Publish device -- ready status and percent of WI-FI signal in "/root/stats" topic  */
-        msg_id = esp_mqtt_client_publish(client, "/root/stats", "ESP32 -- ready", 0, 1, 0);
-        msg_id = esp_mqtt_client_publish(client, "/root/stats", &persent, 0, 1, 0);
+        /*  Publish device -- ready status and percent of WI-FI signal in "/root/monitor" topic  */
+        msg_id = esp_mqtt_client_publish(client, "/root/monitor", "ESP32 -- ready", 0, 1, 0);
+        msg_id = esp_mqtt_client_publish(client, "/root/monitor", &persent, 0, 1, 0);
         ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
         /*  Subscribe to "/root/control" topic to give comands for request device status information  */
         msg_id = esp_mqtt_client_subscribe(client, "/root/control", 1);
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
-        /*  Subscribe to "/root/led-control" topic for control BLINK_GPIO led  */
-        msg_id = esp_mqtt_client_subscribe(client, "/root/led-control", 0);
+        /*  Subscribe to "/root/control/led" topic for control BLINK_GPIO led  */
+        msg_id = esp_mqtt_client_subscribe(client, "/root/control/led", 0);
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
         /*  Add subscriber heer, and add the topic handler in get_topic() */
