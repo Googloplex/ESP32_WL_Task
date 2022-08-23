@@ -47,13 +47,13 @@ static char persent[30];
 
 uint8_t get_rssi(void);
 
-static uint8_t event_flag = 0;
-
-uint8_t *event_p;
 
 static void load_blink_timer_callback(void *args);
 esp_timer_handle_t load_blink_timer;
-esp_mqtt_event_handle_t event_info;
+
+static void heartbeat_timer_callback(void *args);
+esp_timer_handle_t heartbeat_timer;
+
 esp_mqtt_client_handle_t client_info;
 
 static const char *TAG = "MQTT_EXAMPLE";
@@ -90,11 +90,18 @@ void init_tims(void) {
     const esp_timer_create_args_t load_blink_timer_args = {
             .callback = &load_blink_timer_callback,
             /* name is optional, but may help identify the timer when debugging */
-            //.arg = (void*) event_info,
+            .name = "periodic"
+    };
+
+    const esp_timer_create_args_t heartbeat_timer_args = {
+            .callback = &heartbeat_timer_callback,
+            /* name is optional, but may help identify the timer when debugging */
             .name = "periodic"
     };
 
     ESP_ERROR_CHECK(esp_timer_create(&load_blink_timer_args, &load_blink_timer));
+
+    ESP_ERROR_CHECK(esp_timer_create(&heartbeat_timer_args, &heartbeat_timer));
     /* The timer has been created but is not running yet */
 }
 
@@ -277,23 +284,22 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 {
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
     esp_mqtt_event_handle_t event = event_data;
-    //event_p = &event;
-    //event_info = (void*)event;
     esp_mqtt_client_handle_t client = event->client;
-    client_info = (esp_mqtt_client_handle_t)(void*)client;
-    esp_timer_handle_t load_blink_timer_even = (esp_timer_handle_t)(void*)load_blink_timer; //  (esp_timer_handle_t*)load_blink_timer;
     int msg_id;
+
+    client_info = (esp_mqtt_client_handle_t)(void*)client;
+
+    esp_timer_handle_t load_blink_timer_even = (esp_timer_handle_t)(void*)load_blink_timer; //  (esp_timer_handle_t*)load_blink_timer;
     
-
-
+    esp_timer_handle_t heartbeat_timer_even = (esp_timer_handle_t)(void*)heartbeat_timer;
 
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_BEFORE_CONNECT:
-        
+        ESP_ERROR_CHECK(esp_timer_start_periodic(load_blink_timer_even, 50000));    /*  Start load_blink_timer  */
         break;
     case MQTT_EVENT_CONNECTED:
-        // ESP_ERROR_CHECK(esp_timer_stop(load_blink_timer_even));   /*  Stop load_blink_timer  */
-        // gpio_set_level(BLINK_GPIO, 0);   /*  Set led off, if it set on*/
+        ESP_ERROR_CHECK(esp_timer_stop(load_blink_timer_even));   /*  Stop load_blink_timer  */
+        gpio_set_level(BLINK_GPIO, 0);   /*  Set led off, if it set on*/
 
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");   //   -- ready
 
@@ -409,11 +415,13 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
 
         /*  Add subscriber heer, and add the topic handler in get_topic() */
         
-        ESP_ERROR_CHECK(esp_timer_start_periodic(load_blink_timer_even, 5000000));    /*  Start load_blink_timer  */
+        
+        ESP_ERROR_CHECK(esp_timer_start_periodic(heartbeat_timer_even, 8000000));    /*  Start heartbeat_timer  */
 
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");  //  -- lost
+        ESP_ERROR_CHECK(esp_timer_stop(heartbeat_timer_even));   /*  Stop heartbeat_timer  */
         /*  Ptint MQTT -- lost status on OLED  */
         ssd1306_clear_screen(&dev, false);
         ssd1306_display_text(&dev, 0, "MQTT -- lost", 23, false);
@@ -501,13 +509,6 @@ void app_main(void)
 
 static void load_blink_timer_callback(void *args)
 {   /*  Timer for blink led  */
-    int msg_id;
-    //esp_mqtt_event_handle_t event2 = (esp_mqtt_event_handle_t)(void*) event_info;
-    esp_mqtt_client_handle_t client2 = (esp_mqtt_client_handle_t)(void*)client_info;
-    msg_id = esp_mqtt_client_publish(client2, DEVICE "/$heartbeat", "ping", 0, 1, 0);
-    ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-
-    event_flag = 1;
     static uint8_t status = 0;
     if(status==1) {
         led_off();
@@ -517,3 +518,12 @@ static void load_blink_timer_callback(void *args)
     	status = 1;
    }
 }
+
+static void heartbeat_timer_callback(void *args)
+{   /*  Timer for heartbeat client publish */
+    int msg_id;
+    esp_mqtt_client_handle_t client_timer = (esp_mqtt_client_handle_t)(void*)client_info;
+    msg_id = esp_mqtt_client_publish(client_timer, DEVICE "/$heartbeat", "ping", 0, 1, 0);
+    ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+}
+
