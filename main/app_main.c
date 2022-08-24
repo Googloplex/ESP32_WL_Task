@@ -38,7 +38,11 @@ Expand IoT devices based on ESP32
 #include "ssd1306.h"
 #include "font8x8_basic.h"
 
+#define MQTT_LOGIN     "8d68402720d57777866dec36ddbb88cdbd4714e5688dd9ea3428ebe31321fecc"
+#define DEVICE_ID      "device1661249288868575"
 
+#define DEVICE         MQTT_LOGIN "/sweet-home/" DEVICE_ID
+#define DEVICE_ERROR   MQTT_LOGIN "/errors/sweet-home/" DEVICE_ID
 
 #define BLINK_GPIO 2
 static uint8_t s_led_state = 0;
@@ -47,8 +51,14 @@ static char persent[30];
 
 uint8_t get_rssi(void);
 
-static void load_blink_timer_callback(void* arg);
+
+static void load_blink_timer_callback(void *args);
 esp_timer_handle_t load_blink_timer;
+
+static void heartbeat_timer_callback(void *args);
+esp_timer_handle_t heartbeat_timer;
+
+esp_mqtt_client_handle_t client_info;
 
 static const char *TAG = "MQTT_EXAMPLE";
 static const char *TAG2 = "MQTT_RSSI";
@@ -87,7 +97,15 @@ void init_tims(void) {
             .name = "periodic"
     };
 
+    const esp_timer_create_args_t heartbeat_timer_args = {
+            .callback = &heartbeat_timer_callback,
+            /* name is optional, but may help identify the timer when debugging */
+            .name = "periodic"
+    };
+
     ESP_ERROR_CHECK(esp_timer_create(&load_blink_timer_args, &load_blink_timer));
+
+    ESP_ERROR_CHECK(esp_timer_create(&heartbeat_timer_args, &heartbeat_timer));
     /* The timer has been created but is not running yet */
 }
 
@@ -116,6 +134,7 @@ static void log_error_if_nonzero(const char *message, int error_code)
         ESP_LOGE(TAG, "Last error %s: 0x%x", message, error_code);
     }
 }
+
 
 uint8_t rssi_to_persent(uint8_t rssi) {  /* Convert RSSI value to percents */
     uint8_t percent = 0;
@@ -157,22 +176,6 @@ uint8_t get_rssi(void)
     return rssi;
 }
 
- /*  Optional controll by data  */
-// enum DEVICE_COMANDS
-// {
-//     INVALID_DATA,
-//     LED_ON,
-//     LED_OFF,
-//     GET_INFO
-// };
-//
-// static uint8_t get_comand(esp_mqtt_event_handle_t event){
-//         /*  Checking if a string matches  */
-//         if(strncmp(event->data, "on", event->data_len) == 0) return LED_ON;
-//         if(strncmp(event->data, "off", event->data_len) == 0) return LED_OFF;
-//         if(strncmp(event->data, "getinfo", event->data_len) == 0) return GET_INFO;
-//         return INVALID_DATA;
-// }
 
 enum TOPICS
 {
@@ -181,10 +184,11 @@ enum TOPICS
     COMANDS_TOPIC
 };
 
+
 static uint8_t get_topic(esp_mqtt_event_handle_t event){
         /*  Checking if a string matches  */
-        if(strncmp(event->topic, "/root/control", event->topic_len) == 0) return COMANDS_TOPIC;
-        if(strncmp(event->topic, "/root/control/led", event->topic_len) == 0) return LED_CONTROL_TOPIC;
+        if(strncmp(event->topic, DEVICE "/signal/get-signal/set", event->topic_len) == 0) return COMANDS_TOPIC;
+        if(strncmp(event->topic, DEVICE "/led/led-state/set", event->topic_len) == 0) return LED_CONTROL_TOPIC;
         return INVALID_TOPIC;
 }
 
@@ -194,9 +198,9 @@ static void mqtt_data_hendler(esp_mqtt_event_handle_t event){
         esp_mqtt_client_handle_t client = event->client;  // init for esp_mqtt_client_publish()
 
         /*  Ptint curent Topic and Data on OLED  */
-        ssd1306_display_text(&dev, 3, "TOPIC:", 6, false);
+        ssd1306_display_text(&dev, 3, "TOPIC: ->", 6, false);
         ssd1306_display_text(&dev, 4, event->topic, event->topic_len, false);
-        ssd1306_display_text(&dev, 5, "DATA:", 5, false);
+        ssd1306_display_text(&dev, 5, "DATA: ->", 5, false);
         ssd1306_display_text(&dev, 6, event->data, event->data_len+10, false);
         
         /*  Ptint curent Topic and Data in term  */
@@ -207,30 +211,32 @@ static void mqtt_data_hendler(esp_mqtt_event_handle_t event){
         switch (get_topic(event)) {
         case LED_CONTROL_TOPIC:
             /*  LED control  */
-            if(strncmp(event->data, "on", event->data_len) == 0) {
+            if(strncmp(event->data, "true", event->data_len) == 0) {
                 led_on();
                 ESP_LOGI(TAG, "MQTT_led_on()");
-                msg_id = esp_mqtt_client_publish(client, "/root/monitor", "MQTT_led_on()", 0, 1, 0);
-                ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
-            } else if(strncmp(event->data, "off", event->data_len) == 0) {
+                msg_id = esp_mqtt_client_publish(client, DEVICE "/led/led-state", "true", 0, 1, 0);
+            	ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+            } else if(strncmp(event->data, "false", event->data_len) == 0) {
                 led_off();
                 ESP_LOGI(TAG, "MQTT_led_off()");
-                msg_id = esp_mqtt_client_publish(client, "/root/monitor", "MQTT_led_off()", 0, 1, 0);
-                ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                msg_id = esp_mqtt_client_publish(client, DEVICE "/led/led-state", "false", 0, 1, 0);
+            	ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             } else {
-                msg_id = esp_mqtt_client_publish(client, "/root/monitor", "Invalid comand. Put \"on\" or \"off\" to switch on or switch off led.", 0, 1, 0);
-                ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                msg_id = esp_mqtt_client_publish(client, DEVICE_ERROR "/led/led-state", "{\" code \": '404',\" message \": 'Invalid comand. Put \"true\" or \"false\" to switch on or switch off led.'}", 0, 1, 0);
+            	ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             }
             break;
         case COMANDS_TOPIC:
             /*  Get device info  */
-            if(strncmp(event->data, "getinfo", event->data_len) == 0) {
-                sprintf(&persent, "Wi-Fi signal quality: %d%%", get_rssi());
-                msg_id = esp_mqtt_client_publish(client, "/root/monitor", &persent, 0, 1, 0);
+            if(strncmp(event->data, "true", event->data_len) == 0) {
+                msg_id = esp_mqtt_client_publish(client, DEVICE "/signal/get-signal", "true", 0, 1, 0);
+                ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                sprintf(&persent, "%d", get_rssi());
+                msg_id = esp_mqtt_client_publish(client, DEVICE "/signal/set-signal", &persent, 0, 1, 0);
                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             } else {
-                msg_id = esp_mqtt_client_publish(client, "/root/monitor", "Invalid comand. Put \"getinfo\" to get info.", 0, 1, 0);
-                ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+                msg_id = esp_mqtt_client_publish(client, DEVICE_ERROR "/led/led-state", "{\" code \": '505',\" message \": 'Invalid comand.'}", 0, 1, 0);
+            	ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
             }
             break;
         case INVALID_TOPIC:
@@ -253,22 +259,31 @@ static void mqtt_data_hendler(esp_mqtt_event_handle_t event){
  * @param event_data The data for the event, esp_mqtt_event_handle_t.
  */
 
+  
+
 static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
 {
     ESP_LOGD(TAG, "Event dispatched from event loop base=%s, event_id=%d", base, event_id);
     esp_mqtt_event_handle_t event = event_data;
     esp_mqtt_client_handle_t client = event->client;
-    esp_timer_handle_t load_blink_timer_even = (esp_timer_handle_t)(void*)load_blink_timer; //  (esp_timer_handle_t*)load_blink_timer;
     int msg_id;
+
+    client_info = (esp_mqtt_client_handle_t)(void*)client;
+
+    esp_timer_handle_t load_blink_timer_even = (esp_timer_handle_t)(void*)load_blink_timer; 
+    
+    esp_timer_handle_t heartbeat_timer_even = (esp_timer_handle_t)(void*)heartbeat_timer;
+
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_BEFORE_CONNECT:
-        ESP_ERROR_CHECK(esp_timer_start_periodic(load_blink_timer_even, 100000));    /*  Start load_blink_timer  */
+        ESP_ERROR_CHECK(esp_timer_start_periodic(load_blink_timer_even, 50000));    /*  Start load_blink_timer  */
         break;
     case MQTT_EVENT_CONNECTED:
         ESP_ERROR_CHECK(esp_timer_stop(load_blink_timer_even));   /*  Stop load_blink_timer  */
         gpio_set_level(BLINK_GPIO, 0);   /*  Set led off, if it set on*/
 
         ESP_LOGI(TAG, "MQTT_EVENT_CONNECTED");   //   -- ready
+
         
         /*  Ptint MQTT -- ready status and percent of WI-FI signal on OLED  */
         ssd1306_clear_screen(&dev, false);
@@ -276,24 +291,85 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         sprintf(&persent, "Signal %d%%", get_rssi());
         ssd1306_display_text(&dev, 1, &persent, strlen(&persent), false);
 
-        /*  Publish device -- ready status and percent of WI-FI signal in "/root/monitor" topic  */
-        msg_id = esp_mqtt_client_publish(client, "/root/monitor", "ESP32 -- ready", 0, 1, 0);
-        msg_id = esp_mqtt_client_publish(client, "/root/monitor", &persent, 0, 1, 0);
-        ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
 
-        /*  Subscribe to "/root/control" topic to give comands for request device status information  */
-        msg_id = esp_mqtt_client_subscribe(client, "/root/control", 1);
+        /*  Config device init topics  */
+        esp_mqtt_client_publish(client, DEVICE "/$name", "MQTT-2SC", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$fw/name", "draft", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$fw/version", "2", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$localip", "192.168.1.228", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$mac", "3C:71:BF:FF:78:40", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$implementation", "ESP32", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$state", "ready", 0, 1, 0);
+
+
+        /*  Config Wi-Fi init topics  */
+        esp_mqtt_client_publish(client, DEVICE "/$options", "signal",  0, 1, 0);
+        sprintf(&persent, "%d", get_rssi());
+        esp_mqtt_client_publish(client, DEVICE "/$options/signal", &persent,  0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$options/signal/$name", "Wi-Fi",  0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$options/signal/$settable", "false",  0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$options/signal/$retained", "true",  0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$options/signal/$datatype", "integer",  0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/$options/signal/$unit", "%%",  0, 1, 0);
+
+        /*  Init nodes led and signal  */
+        esp_mqtt_client_publish(client, DEVICE "/$nodes", "led, signal", 0, 1, 0);
+
+        /*  Config led node  */
+        esp_mqtt_client_publish(client, DEVICE "/led/$name", "LED-GPIO", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/led/$state", "ready", 0, 1, 0);
+
+        /*  Add led-state propertti to led node  */
+        esp_mqtt_client_publish(client, DEVICE "/led/$propertties", "led-state", 0, 1, 0);
+
+        /*  Config led-state propertti  */
+        esp_mqtt_client_publish(client, DEVICE "/led/led-state", "false", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/led/led-state/$name", "ledstate", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/led/led-state/$settable", "true", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/led/led-state/$retained", "true", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/led/led-state/$datatype", "boolean", 0, 1, 0);
+
+        /*  Config signal node  */
+        esp_mqtt_client_publish(client, DEVICE "/signal/$name", "Signal", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/$state", "ready", 0, 1, 0);
+
+        /*  Add get-signal and set-signal propertties to signal node  */
+        esp_mqtt_client_publish(client, DEVICE "/signal/$propertties", "get-signal, set-signal", 0, 1, 0);
+
+        /*  Config get-signal propertti  */
+        esp_mqtt_client_publish(client, DEVICE "/signal/get-signal", "false", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/get-signal/$name", "getsignal", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/get-signal/$settable", "true", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/get-signal/$retained", "false", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/get-signal/$datatype", "boolean", 0, 1, 0);
+
+        /*  Config set-signal propertti  */
+        sprintf(&persent, "%d", get_rssi());
+        esp_mqtt_client_publish(client, DEVICE "/signal/set-signal", &persent, 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/set-signal/$name", "setsignal", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/set-signal/$settable", "false", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/set-signal/$retained", "false", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/set-signal/$datatype", "integer", 0, 1, 0);
+        esp_mqtt_client_publish(client, DEVICE "/signal/set-signal/$unit", "%%",  0, 1, 0);
+
+
+        /*  Subscribe to "/led/led-state/set" topic for control BLINK_GPIO led */
+        msg_id = esp_mqtt_client_subscribe(client, DEVICE "/led/led-state/set", 1);
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
-        /*  Subscribe to "/root/control/led" topic for control BLINK_GPIO led  */
-        msg_id = esp_mqtt_client_subscribe(client, "/root/control/led", 0);
+        /*  Subscribe to "/signal/get-signal/set" topic to get signal val  */
+        msg_id = esp_mqtt_client_subscribe(client, DEVICE "/signal/get-signal/set", 1);
         ESP_LOGI(TAG, "sent subscribe successful, msg_id=%d", msg_id);
 
         /*  Add subscriber heer, and add the topic handler in get_topic() */
+        
+        
+        ESP_ERROR_CHECK(esp_timer_start_periodic(heartbeat_timer_even, 8000000));    /*  Start heartbeat_timer  */
 
         break;
     case MQTT_EVENT_DISCONNECTED:
         ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");  //  -- lost
+        ESP_ERROR_CHECK(esp_timer_stop(heartbeat_timer_even));   /*  Stop heartbeat_timer  */
         /*  Ptint MQTT -- lost status on OLED  */
         ssd1306_clear_screen(&dev, false);
         ssd1306_display_text(&dev, 0, "MQTT -- lost", 23, false);
@@ -369,9 +445,10 @@ void app_main(void)
     ESP_ERROR_CHECK(example_connect());
     
     mqtt_app_start();
+    
 }
 
-static void load_blink_timer_callback(void* arg)
+static void load_blink_timer_callback(void *args)
 {   /*  Timer for blink led  */
     static uint8_t status = 0;
     if(status==1) {
@@ -382,3 +459,12 @@ static void load_blink_timer_callback(void* arg)
     	status = 1;
    }
 }
+
+static void heartbeat_timer_callback(void *args)
+{   /*  Timer for heartbeat client publish */
+    int msg_id;
+    esp_mqtt_client_handle_t client_timer = (esp_mqtt_client_handle_t)(void*)client_info;
+    msg_id = esp_mqtt_client_publish(client_timer, DEVICE "/$heartbeat", "ping", 0, 1, 0);
+    ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
+}
+

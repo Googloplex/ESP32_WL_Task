@@ -27,7 +27,9 @@
     "string_view": "c",
     "system_error": "c",
     "string.h": "c",
-    "stddef.h": "c"
+    "stddef.h": "c",
+    "future": "c",
+    "regex": "c"
   },
   "idf.adapterTargetName": "esp32"
 }
