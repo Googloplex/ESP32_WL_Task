@@ -198,9 +198,9 @@ static void mqtt_data_hendler(esp_mqtt_event_handle_t event){
         esp_mqtt_client_handle_t client = event->client;  // init for esp_mqtt_client_publish()
 
         /*  Ptint curent Topic and Data on OLED  */
-        ssd1306_display_text(&dev, 3, "TOPIC:", 6, false);
+        ssd1306_display_text(&dev, 3, "TOPIC: ->", 6, false);
         ssd1306_display_text(&dev, 4, event->topic, event->topic_len, false);
-        ssd1306_display_text(&dev, 5, "DATA:", 5, false);
+        ssd1306_display_text(&dev, 5, "DATA: ->", 5, false);
         ssd1306_display_text(&dev, 6, event->data, event->data_len+10, false);
         
         /*  Ptint curent Topic and Data in term  */
